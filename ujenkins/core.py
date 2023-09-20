@@ -89,3 +89,7 @@ class Jenkins:
     @staticmethod
     def _return_text(response: Response) -> str:
         return response.text
+    
+    @staticmethod
+    def _return_response(response: Response) -> str:
+        return response.text, response.headers

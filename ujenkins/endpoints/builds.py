@@ -118,6 +118,17 @@ class Builds:
             f'/{folder_name}/job/{job_name}/{build_id}/api/json'
         )
 
+    def get_output_logtext(self, name: str, build_id: Union[int, str], start=0) -> str:
+
+        folder_name, job_name = self.jenkins._get_folder_and_job_name(name)
+        return self.jenkins._request(
+            'POST',
+            f'/{folder_name}/job/{job_name}/{build_id}/logText/progressiveText',
+            headers={"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"},
+            data={'start': start},
+            _callback=self.jenkins._return_response,
+        )
+
     def get_output(self, name: str, build_id: Union[int, str]) -> str:
         """
         Get console output of specified build.
