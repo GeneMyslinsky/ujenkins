@@ -7,9 +7,9 @@ dotenv.load_dotenv()
 
 async def start_job(job_location, parameters=None):
     jenkins = AsyncJenkinsClient(
-        os.environ.get("URL"), 
-        os.environ.get("USER"), 
-        os.environ.get("PASSWORD")
+        os.environ.get("JENKINS_URL"), 
+        os.environ.get("JENKINS_USER"), 
+        os.environ.get("JENKINS_PASSWORD")
         )
     args = {}
     if parameters: args = parameters
@@ -36,6 +36,7 @@ async def start_job(job_location, parameters=None):
     ## this is where the streaming starts
     async for output in jenkins.builds.stream(job_location, number):
         print(output)
-
+    
+    jenkins.close()
 
 asyncio.run(start_job("dev/testgene",parameters={"param1": "test", "param2": "option1"}))
