@@ -336,7 +336,11 @@ class Builds:
 class StreamHandler:
     def __init__(self, builds) -> None:
         self.builds = builds
-
+    def check_loop(self, more_data, text_size, start): # not implemented
+        if more_data == 'true':
+            return start == text_size
+        else:
+            return False
     def stream_progressive(self, name: str, build_id: Union[int, str], format_html: bool = False) -> str:
         start = 0
         while True:

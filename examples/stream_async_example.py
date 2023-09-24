@@ -37,6 +37,6 @@ async def start_job(job_location, parameters=None):
     async for output in jenkins.builds.stream(job_location, number):
         print(output)
     
-    jenkins.close()
+    await jenkins.close()
 
 asyncio.run(start_job("dev/testgene",parameters={"param1": "test", "param2": "option1"}))

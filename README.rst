@@ -56,6 +56,10 @@ Or latest developing version
 
     pip3 install git+https://github.com/pbelskiy/ujenkins
 
+.. code:: shell
+
+    pip install -e ./ --user
+
 Usage
 -----
 
