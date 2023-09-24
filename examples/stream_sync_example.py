@@ -1,7 +1,7 @@
 from ujenkins import JenkinsClient #this is GeneMyslinsky/ujenkins/streaming_batteries
 
 import os, time, dotenv
-
+from rich import print
 
 dotenv.load_dotenv()
 
