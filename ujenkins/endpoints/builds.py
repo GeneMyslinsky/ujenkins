@@ -5,6 +5,8 @@ from typing import Any, List, Optional, Union, Callable
 
 from ujenkins.exceptions import JenkinsError
 
+import time
+import asyncio
 
 class Builds:
     """
@@ -18,9 +20,9 @@ class Builds:
     - lastUnstableBuild
     - lastUnsuccessfulBuild
     """
-    def __init__(self, jenkins, sleep_callback:  Callable[[int], Union[None, Any]]) -> None:
+    def __init__(self, jenkins) -> None:
         self.jenkins = jenkins
-        self.sleep_callback = sleep_callback
+
     def get(self, name: str,
             fields: Optional[Union[List[str], str]] = None,
             start: Optional[int] = None, end: Optional[int] = None
@@ -117,18 +119,6 @@ class Builds:
             'GET',
             f'/{folder_name}/job/{job_name}/{build_id}/api/json'
         )
-
-    def stream_progressive(self, name: str, build_id: Union[int, str], format_html: bool = False) -> str:
-        start = 0
-        while True:
-            output, headers = self.get_output_progressive(name, build_id, start=start, format_html=format_html)
-            yield output
-            if headers.get('X-More-Data') == 'true':
-                start = headers['X-Text-Size']
-            else:
-                break
-            self._sleep(2)
-
     
     def get_output_progressive(self, name: str, build_id: Union[int, str], start: int = 0, format_html: bool = False) -> str:
         if format_html:
@@ -142,7 +132,10 @@ class Builds:
             data={'start': start},
             _callback=self.jenkins._return_response,
         )
-
+    
+    def stream(self, name: str, build_id: Union[int, str], format_html: bool = False):
+        return StreamHandler.stream(self, name, build_id, format_html)
+    
     def get_output(self, name: str, build_id: Union[int, str]) -> str:
         """
         Get console output of specified build.
@@ -384,3 +377,41 @@ class Builds:
             'POST',
             f'/{folder_name}/job/{job_name}/{build_id}/doDelete'
         )
+
+class StreamHandler:
+    def __init__(self, builds) -> None:
+        self.builds = builds
+
+    def stream_progressive(self, name: str, build_id: Union[int, str], format_html: bool = False) -> str:
+        start = 0
+        while True:
+            output, headers = self.builds.get_output_progressive(name, build_id, start=start, format_html=format_html)
+            text_size = headers['X-Text-Size']
+            if start == text_size: pass
+            else: yield output
+            if headers.get('X-More-Data') == 'true':
+                start = text_size
+            else:
+                break
+            time.sleep(2)
+
+    async def stream_progressive_async(self, name: str, build_id: Union[int, str], format_html: bool = False) -> str:
+        start = 0
+        while True:
+            output, headers = await self.builds.get_output_progressive(name, build_id, start=start, format_html=format_html)
+            text_size = headers['X-Text-Size']
+            if start == text_size: pass
+            else: yield output
+            if headers.get('X-More-Data') == 'true':
+                start = text_size
+            else:
+                break
+            await asyncio.sleep(2)
+
+    @staticmethod
+    def stream(builds, name: str, build_id: Union[int, str], format_html: bool = False):
+        handler = StreamHandler(builds)
+        if asyncio.get_event_loop().is_running():
+            return handler.stream_progressive_async(name, build_id, format_html)
+        else:
+            return handler.stream_progressive(name, build_id, format_html)
