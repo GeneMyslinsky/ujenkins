@@ -5,8 +5,56 @@ from typing import Any, List, Optional, Union, Callable
 
 from ujenkins.exceptions import JenkinsError
 
-import time
 import asyncio
+class DelayInterface:
+    def __init__(self, delay: float = 2.0) -> float:
+        self.delay = delay
+
+    def calculate_delay(self, output: str, text_size: int) -> float:
+        return self.delay
+
+class StreamHandler:
+    def __init__(self, builds, delay_handler: DelayInterface = None) -> None:
+        self.builds = builds
+        self.delay_handler = delay_handler
+
+    def _calculate_delay(self, output: str, text_size: int) -> float:
+        print(self.delay_handler)
+        if self.delay_handler:
+            return self.delay_handler.calculate_delay(output, text_size)
+        return 2.0  # default delay
+
+    def stream_progressive(self, name: str, build_id: Union[int, str], format_html: bool = False) -> str:
+        start = 0
+        while True:
+            output, more_data, text_size = self.builds.get_output_progressive(name, build_id, start=start, format_html=format_html)
+            print("loop")
+            if start == text_size: pass
+            else: yield output
+            if more_data:
+                start = text_size
+            else:
+                break
+            self.builds.jenkins._sleep(self._calculate_delay(output, text_size))
+
+    async def stream_progressive_async(self, name: str, build_id: Union[int, str], format_html: bool = False) -> str:
+        start = 0
+        while True:
+            output, more_data, text_size = await self.builds.get_output_progressive(name, build_id, start=start, format_html=format_html)
+            print("loop")
+            if start == text_size: pass
+            else: yield output
+            if more_data:
+                start = text_size
+            else:
+                break
+            await self.builds.jenkins._sleep(self._calculate_delay(output, text_size))
+
+    def stream(self, builds, name: str, build_id: Union[int, str], format_html: bool = False):
+        if asyncio.get_event_loop().is_running():
+            return self.stream_progressive_async(name, build_id, format_html)
+        else:
+            return self.stream_progressive(name, build_id, format_html)
 
 class Builds:
     """
@@ -85,11 +133,11 @@ class Builds:
             f'/{folder_name}/job/{job_name}/{build_id}/logText/progressive{endpoint}',
             headers={"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"},
             data={'start': start},
-            _callback=self.jenkins._return_response,
+            _callback=self.jenkins._return_text_stream,
         )
     
-    def stream(self, name: str, build_id: Union[int, str], format_html: bool = False):
-        return StreamHandler.stream(self, name, build_id, format_html)
+    def stream(self, name: str, build_id: Union[int, str], format_html: bool = False, delay_handler: DelayInterface = DelayInterface(delay = 2)) -> str:
+        return StreamHandler(self, delay_handler=delay_handler).stream(self, name, build_id, format_html)
     
     def get_output(self, name: str, build_id: Union[int, str]) -> str:
         """
@@ -332,45 +380,5 @@ class Builds:
             'POST',
             f'/{folder_name}/job/{job_name}/{build_id}/doDelete'
         )
+    
 
-class StreamHandler:
-    def __init__(self, builds) -> None:
-        self.builds = builds
-    def check_loop(self, more_data, text_size, start): # not implemented
-        if more_data == 'true':
-            return start == text_size
-        else:
-            return False
-    def stream_progressive(self, name: str, build_id: Union[int, str], format_html: bool = False) -> str:
-        start = 0
-        while True:
-            output, headers = self.builds.get_output_progressive(name, build_id, start=start, format_html=format_html)
-            text_size = headers['X-Text-Size']
-            if start == text_size: pass
-            else: yield output
-            if headers.get('X-More-Data') == 'true':
-                start = text_size
-            else:
-                break
-            time.sleep(2)
-
-    async def stream_progressive_async(self, name: str, build_id: Union[int, str], format_html: bool = False) -> str:
-        start = 0
-        while True:
-            output, headers = await self.builds.get_output_progressive(name, build_id, start=start, format_html=format_html)
-            text_size = headers['X-Text-Size']
-            if start == text_size: pass
-            else: yield output
-            if headers.get('X-More-Data') == 'true':
-                start = text_size
-            else:
-                break
-            await asyncio.sleep(2)
-
-    @staticmethod
-    def stream(builds, name: str, build_id: Union[int, str], format_html: bool = False):
-        handler = StreamHandler(builds)
-        if asyncio.get_event_loop().is_running():
-            return handler.stream_progressive_async(name, build_id, format_html)
-        else:
-            return handler.stream_progressive(name, build_id, format_html)

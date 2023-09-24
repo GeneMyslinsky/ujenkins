@@ -1,9 +1,35 @@
 from ujenkins import JenkinsClient #this is GeneMyslinsky/ujenkins/streaming_batteries
-
+from ujenkins.endpoints.builds import DelayInterface
 import os, time, dotenv
 from rich import print
 
 dotenv.load_dotenv()
+
+class MyCustomDelay(DelayInterface):
+    def __init__(self, min_delay: float, max_delay: float) -> None:
+        self.std_delay = 2.5
+        self.min_delay = min_delay
+        self.max_delay = max_delay
+        self.i = 0
+        self.average_size = 0
+    def calculate_delay(self, output: str, text_size: int) -> float:
+        # Custom logic to calculate delay
+        # delay = min(self.max_delay, max(self.min_delay, text_size * 0.001))
+        text_size = int(text_size)
+        self.i += 1
+        self.average_size = ((self.average_size*self.i) + text_size) / self.i
+        if text_size > self.average_size:
+            delay = self.std_delay / 1.5
+        else:
+            delay = self.std_delay * 1.5
+    
+        if delay < self.min_delay: delay = self.min_delay
+        if delay > self.max_delay: delay = self.max_delay
+        print(delay, self.average_size, self.text_size)
+        return delay
+    
+my_custom_delay = MyCustomDelay(min_delay=1.0, max_delay=5.0)
+
 
 def start_job(job_location, parameters=None):
     jenkins = JenkinsClient(
@@ -36,7 +62,7 @@ def start_job(job_location, parameters=None):
 
             
     ## this is where the streaming starts
-    for output in jenkins.builds.stream(job_location, number):
+    for output in jenkins.builds.stream(job_location, number, False, delay_handler=my_custom_delay):
         print(output)
 
     jenkins.close()

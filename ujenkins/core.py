@@ -96,8 +96,9 @@ class Jenkins:
 
     @staticmethod
     def _return_text_stream(response: Response) -> str:
+        more_data = response.headers.get('X-More-Data', False)
         return (
             response.text, 
-            response.headers.get('X-More-Data', 'false'),
+            more_data,
             response.headers.get('X-Text-Size', '0')
         )
