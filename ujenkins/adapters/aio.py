@@ -15,7 +15,7 @@ from aiohttp import (
 from ujenkins.adapters import CRUMB_ISSUER_URL
 from ujenkins.core import Jenkins, JenkinsError, JenkinsNotFoundError, Response
 
-
+from asyncio import sleep
 class RetryClientSession:
 
     def __init__(self, options: dict) -> None:
@@ -232,3 +232,10 @@ class AsyncJenkinsClient(Jenkins):
         Close client session
         """
         await self.session.close()
+
+    @staticmethod
+    async def _sleep(seconds: float = 2.0) -> None:  # type: ignore
+        """
+        Sleep for given amount of seconds.
+        """
+        await sleep(seconds)

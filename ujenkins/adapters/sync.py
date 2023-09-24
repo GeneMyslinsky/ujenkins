@@ -9,7 +9,7 @@ from ujenkins.adapters import CRUMB_ISSUER_URL
 from ujenkins.core import Jenkins, Response
 from ujenkins.exceptions import JenkinsError, JenkinsNotFoundError
 
-
+from time import sleep
 class JenkinsClient(Jenkins):
 
     def __init__(self,
@@ -218,3 +218,10 @@ class JenkinsClient(Jenkins):
         Close client session
         """
         self.session.close()
+
+    @staticmethod
+    def _sleep(seconds: float = 2.0) -> None:
+        """
+        Sleep for given amount of seconds.
+        """
+        sleep(seconds)

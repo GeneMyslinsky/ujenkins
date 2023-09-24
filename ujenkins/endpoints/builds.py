@@ -1,7 +1,7 @@
 import json
 
 from functools import partial
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional, Union, Callable
 
 from ujenkins.exceptions import JenkinsError
 
@@ -18,9 +18,9 @@ class Builds:
     - lastUnstableBuild
     - lastUnsuccessfulBuild
     """
-    def __init__(self, jenkins) -> None:
+    def __init__(self, jenkins, sleep_callback:  Callable[[int], Union[None, Any]]) -> None:
         self.jenkins = jenkins
-
+        self.sleep_callback = sleep_callback
     def get(self, name: str,
             fields: Optional[Union[List[str], str]] = None,
             start: Optional[int] = None, end: Optional[int] = None
@@ -118,12 +118,26 @@ class Builds:
             f'/{folder_name}/job/{job_name}/{build_id}/api/json'
         )
 
-    def get_output_logtext(self, name: str, build_id: Union[int, str], start=0) -> str:
+    def stream_progressive(self, name: str, build_id: Union[int, str], format_html: bool = False) -> str:
+        start = 0
+        while True:
+            output, headers = self.get_output_progressive(name, build_id, start=start, format_html=format_html)
+            yield output
+            if headers.get('X-More-Data') == 'true':
+                start = headers['X-Text-Size']
+            else:
+                break
+            self._sleep(2)
 
+    
+    def get_output_progressive(self, name: str, build_id: Union[int, str], start: int = 0, format_html: bool = False) -> str:
+        if format_html:
+            endpoint = 'Html'
+        else: endpoint = 'Text'
         folder_name, job_name = self.jenkins._get_folder_and_job_name(name)
         return self.jenkins._request(
             'POST',
-            f'/{folder_name}/job/{job_name}/{build_id}/logText/progressiveText',
+            f'/{folder_name}/job/{job_name}/{build_id}/logText/progressive{endpoint}',
             headers={"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"},
             data={'start': start},
             _callback=self.jenkins._return_response,
