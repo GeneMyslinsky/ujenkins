@@ -3,9 +3,11 @@ import os
 import asyncio
 import dotenv
 from rich import print, traceback
+from rich.console import Console
 import xml.etree.ElementTree as ET
 import re
 
+console=Console()
 traceback.install()
 dotenv.load_dotenv()
 
@@ -72,7 +74,7 @@ async def start_job(job_location, parameters=None, groovy_script=None):
 
     async for output in jenkins.builds.stream(job_location, number):
         lines = parse_output_to_lod(output)
-        [print(line['line']) if line['line_type'] == "normal" else print(f"[bold blue]{line['line']}[/bold blue]") for line in lines]
+        [print(line['line']) if line['line_type'] == "normal" else console.print(f"{line['line']}",style="grey3") for line in lines]
     
     await jenkins.close()
 
