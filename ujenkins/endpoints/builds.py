@@ -9,7 +9,6 @@ import asyncio
 class DelayInterface:
     def __init__(self, delay: float = 2.0) -> float:
         self.delay = delay
-
     def calculate_delay(self, output: str, text_size: int) -> float:
         return self.delay
 
@@ -19,7 +18,6 @@ class StreamHandler:
         self.delay_handler = delay_handler
 
     def _calculate_delay(self, output: str, text_size: int) -> float:
-        print(self.delay_handler)
         if self.delay_handler:
             return self.delay_handler.calculate_delay(output, text_size)
         return 2.0  # default delay
@@ -28,7 +26,6 @@ class StreamHandler:
         start = 0
         while True:
             output, more_data, text_size = self.builds.get_output_progressive(name, build_id, start=start, format_html=format_html)
-            print("loop")
             if start == text_size: pass
             else: yield output
             if more_data:
@@ -41,7 +38,6 @@ class StreamHandler:
         start = 0
         while True:
             output, more_data, text_size = await self.builds.get_output_progressive(name, build_id, start=start, format_html=format_html)
-            print("loop")
             if start == text_size: pass
             else: yield output
             if more_data:
