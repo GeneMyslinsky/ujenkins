@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from time import sleep
 from typing import Any, Callable, List, Optional, Union
 
 from requests import Session
@@ -9,7 +10,7 @@ from ujenkins.adapters import CRUMB_ISSUER_URL
 from ujenkins.core import Jenkins, Response
 from ujenkins.exceptions import JenkinsError, JenkinsNotFoundError
 
-from time import sleep
+
 class JenkinsClient(Jenkins):
 
     def __init__(self,

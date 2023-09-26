@@ -1,5 +1,6 @@
 import asyncio
 
+from asyncio import sleep
 from http import HTTPStatus
 from typing import Any, Callable, List, Optional, Union
 
@@ -15,7 +16,7 @@ from aiohttp import (
 from ujenkins.adapters import CRUMB_ISSUER_URL
 from ujenkins.core import Jenkins, JenkinsError, JenkinsNotFoundError, Response
 
-from asyncio import sleep
+
 class RetryClientSession:
 
     def __init__(self, options: dict) -> None:

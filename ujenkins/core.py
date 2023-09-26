@@ -89,16 +89,12 @@ class Jenkins:
     @staticmethod
     def _return_text(response: Response) -> str:
         return response.text
-    
-    @staticmethod
-    def _return_response(response: Response) -> str:
-        return response.text, response.headers
 
     @staticmethod
-    def _return_text_stream(response: Response) -> str:
+    def _return_text_stream(response: Response) -> Tuple[str, Any, Any]:
         more_data = response.headers.get('X-More-Data', False)
         return (
-            response.text, 
+            response.text,
             more_data,
             response.headers.get('X-Text-Size', '0')
         )
