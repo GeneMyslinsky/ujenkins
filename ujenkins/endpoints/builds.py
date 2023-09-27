@@ -176,7 +176,7 @@ class Builds:
             format_html: bool = False,
             delay_handler: DelayInterface = DelayInterface(delay=2)
             ) -> str:
-        return StreamHandler(self, delay_handler=delay_handler).stream(self, name, build_id, format_html)
+        return StreamHandler(self, delay_handler=delay_handler).stream(name, build_id, format_html)
 
     def get_output(self, name: str, build_id: Union[int, str]) -> str:
         """
